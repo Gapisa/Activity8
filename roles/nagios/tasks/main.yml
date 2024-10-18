@@ -1,14 +1,61 @@
 ---
-  - name: install updates (CentOS)
-    tags: always
-    dnf:
-      update_only: yes
-      update_cache: yes
-    when: ansible_distribution == "CentOS"
+- name: Install dependencies for Nagios on Ubuntu
+  apt:
+    name:
+      - apache2
+      - php
+      - libapache2-mod-php
+      - build-essential
+      - libgd-dev
+    state: present
+  when: ansible_os_family == "Debian"
 
-  - name: install updates (Ubuntu)
-    tags: always
-    apt:
-      upgrade: yes
-      update_cache: yes
-    when: ansible_distribution == "Ubuntu"
+- name: Install dependencies for Nagios on CentOS
+  yum:
+    name:
+      - httpd
+      - php
+      - gcc
+      - glibc-devel
+      - gd-devel
+      - make
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Download Nagios source code
+  get_url:
+    url: https://github.com/NagiosEnterprises/nagioscore/archive/refs/tags/release-4-4-6.tar.gz
+    dest: /tmp/nagios.tar.gz
+
+- name: Extract Nagios source code
+  unarchive:
+    src: /tmp/nagios.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+- name: Compile and install Nagios
+  command: >
+    ./configure --with-command-group=nagcmd &&
+    make all &&
+    make install &&
+    make install-commandmode &&
+    make install-init &&
+    make install-config &&
+    make install-webconf
+  args:
+    chdir: /tmp/nagioscore-release-4-4-6
+
+- name: Create Nagios admin user
+  command: htpasswd -b -c /usr/local/nagios/etc/htpasswd.users nagiosadmin password123
+
+- name: Start Apache service
+  service:
+    name: "{{ 'httpd' if ansible_os_family == 'RedHat' else 'apache2' }}"
+    state: started
+    enabled: true
+
+- name: Start Nagios service
+  service:
+    name: nagios
+    state: started
+    enabled: true
