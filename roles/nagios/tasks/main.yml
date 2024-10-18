@@ -1,5 +1,5 @@
 ---
-- name: Install dependencies for Nagios on Ubuntu
+- name: Install for Nagios on Ubuntu
   apt:
     name:
       - apache2
@@ -7,10 +7,10 @@
       - libapache2-mod-php
       - build-essential
       - libgd-dev
-    state: present
-  when: ansible_os_family == "Debian"
+    state: latest
+  when: ansible_distribution == "Ubuntu"
 
-- name: Install dependencies for Nagios on CentOS
+- name: Install for Nagios on CentOS
   yum:
     name:
       - httpd
@@ -19,8 +19,8 @@
       - glibc-devel
       - gd-devel
       - make
-    state: present
-  when: ansible_os_family == "RedHat"
+    state: latest
+  when: ansible_distribution == "CentOS"
 
 - name: Download Nagios source code
   get_url:
